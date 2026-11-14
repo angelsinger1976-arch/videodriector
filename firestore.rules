@@ -1,0 +1,57 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Default-Deny Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Primitive Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidProject(data) {
+      return data.keys().hasAll(['userId', 'title', 'createdAt', 'creativeBrief', 'clips']) &&
+             data.keys().hasOnly(['id', 'userId', 'title', 'createdAt', 'songDescription', 'directorId', 'videoType', 'aspectRatio', 'creativeBrief', 'clips']) &&
+             (!('id' in data) || (data.id is string && data.id.size() >= 1 && data.id.size() <= 128 && data.id.matches('^[a-zA-Z0-9_\\-]+$'))) &&
+             data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 && data.userId == request.auth.uid &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
+             data.createdAt is timestamp &&
+             (!('songDescription' in data) || (data.songDescription is string && data.songDescription.size() <= 20000)) &&
+             (!('directorId' in data) || (data.directorId is string && data.directorId.size() <= 128)) &&
+             (!('videoType' in data) || (data.videoType is string && data.videoType.size() <= 64)) &&
+             (!('aspectRatio' in data) || (data.aspectRatio is string && data.aspectRatio.size() <= 16)) &&
+             data.creativeBrief is map &&
+             data.clips is list && data.clips.size() <= 100 && (data.clips.size() == 0 || data.clips[0] is map);
+    }
+
+    match /projects/{projectId} {
+      allow get: if isSignedIn() && isValidId(projectId) && (resource == null || existing().userId == request.auth.uid);
+      allow list: if isSignedIn() && existing().userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(projectId) && isValidProject(incoming());
+      allow update: if isSignedIn() && isValidId(projectId) && existing().userId == request.auth.uid &&
+                    isValidProject(incoming()) &&
+                    incoming().userId == existing().userId &&
+                    incoming().createdAt == existing().createdAt &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['title', 'songDescription', 'directorId', 'videoType', 'aspectRatio', 'creativeBrief', 'clips']);
+      allow delete: if isSignedIn() && isValidId(projectId) && existing().userId == request.auth.uid;
+    }
+
+    match /test/connection {
+      allow get: if true;
+    }
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "entities": {
+    "Project": {
+      "title": "Project",
+      "description": "A storyboard project containing creative brief and shot list",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "songDescription": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "directorId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "videoType": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "aspectRatio": {
+          "type": "string",
+          "maxLength": 16
+        },
+        "creativeBrief": {
+          "type": "object"
+        },
+        "clips": {
+          "type": "array"
+        }
+      },
+      "required": ["userId", "title", "createdAt", "creativeBrief", "clips"]
+    }
+  },
+  "firestore": {
+    "/projects/{projectId}": {
+      "schema": "Project",
+      "description": "User storyboard projects"
+    }
+  }
+}
